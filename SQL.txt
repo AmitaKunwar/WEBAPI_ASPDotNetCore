@@ -1,0 +1,204 @@
+USE [SchoolDB]
+GO
+
+/****** Object:  Table [dbo].[SchoolImage]    Script Date: 11/10/2021 10:55:39 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[SchoolImage](
+	[Id] [int] NOT NULL,
+	[Image1] [image] NOT NULL,
+	[Description] [text] NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+
+=============
+
+USE [SchoolDB]
+GO
+
+/****** Object:  Table [dbo].[EMPLOYEE]    Script Date: 11/9/2021 4:09:08 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[EMPLOYEE](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [varchar](50) NOT NULL,
+	[Email] [varchar](50) NULL,
+	[Gender] [varchar](50) NULL,
+	[Status] [varchar](50) NULL,
+	[Phone] [varchar](50) NULL,
+	[Address] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+=============Search Stored Procedure ==================================
+
+CREATE PROCEDURE sp_SearchShoppingItem  @categoryname nvarchar(30), @itemName nvarchar(30), @itemPrice1 decimal, @itemprice2 decimal, @userid nvarchar(450)
+AS
+SELECT sl.Id, Itemname, ShoppingDescription, ItemPrice, ans.Id as  UserID,ans.username as UserName
+FROM ShoppingList sl
+JOIN ShoppingCategory sc
+ON sl.CategoryID = sc.CatID
+JOIN AspNetUsers ans
+ON ans.Id = sl.UserID
+WHERE (ans.Id like '%' + @userid + '%') AND ((sc.CategoryName like '%' + @categoryname + '%') OR (sl.itemName like '%'+@itemName+'%') OR (ItemPrice Between @itemPrice1 and @itemPrice2));
+
+================GetGetMyTotalExpenditure Stored Procedure ===========
+CREATE PROCEDURE sp_GetMyTotalExpenditure @username nvarchar(30)
+AS
+SELECT SUM(sl.itemPrice) as TotalPrice , ans.Id as UserID,ans.Username
+FROM 
+ShoppingList sl
+INNER JOIN AspNetUsers ans
+ON ans.Id = sl.UserID
+where ans.UserName like '%' + @username + '%'
+Group by ans.Id ,ans.Username
+
+
+=============GetMyShoppingIndividualItem Stored Procedure ==================================
+
+CREATE PROCEDURE sp_GetMyShoppingIndividualItem @username nvarchar(30), @categoryname nvarchar(30)
+AS
+SELECT sl.Id, sl.itemName,sl.itemPrice , ans.Id as UserID,ans.Username
+FROM 
+ShoppingCategory sc
+INNER JOIN ShoppingList sl
+on sc.CatID = sl.CategoryID
+INNER JOIN AspNetUsers ans
+ON ans.Id = sl.UserID
+where sc.CategoryName like '%' + @categoryname + '%'
+and ans.UserName like '%' + @username + '%'
+
+=============GetMyCategory Stored Procedure ==================================
+
+CREATE PROCEDURE sp_GetMyCategory @username nvarchar(30)
+AS
+SELECT sc.CatID, sc.CategoryName,SUM(sl.itemPrice) as itemPrice , ans.Id as UserID,ans.Username
+FROM 
+ShoppingCategory sc
+INNER JOIN ShoppingList sl
+on sc.CatID = sl.CategoryID
+INNER JOIN AspNetUsers ans
+ON ans.Id = sl.UserID
+where ans.UserName like '%' + @username + '%'
+Group by sc.CatID, sc.CategoryName,ans.Id ,ans.Username
+
+=============Get Items Stored Procedure ==================================
+
+CREATE PROCEDURE [dbo].[sp_GetShoppingItem] @userid nvarchar(30),@categoryname nvarchar(30), @itemName nvarchar(30), @itemPrice1 decimal, @itemprice2 decimal
+AS
+SELECT sl.Id,  Itemname, ShoppingDescription, ItemPrice,ans.Id as UserID,ans.UserName
+FROM ShoppingList sl
+JOIN ShoppingCategory sc
+ON sl.CategoryID = sc.CatID
+JOIN AspNetUsers ans
+ON  ans.Id = sl.UserID
+WHERE (ans.Id like '%' + @userid + '%') AND ((sc.CategoryName like '%' + @categoryname + '%') OR (sl.itemName like '%'+@itemName+'%') OR (ItemPrice Between @itemPrice1 and @itemPrice2));
+
+
+=============ShoppingList Table ================================
+
+USE [AKDatabase]
+GO
+
+/****** Object:  Table [dbo].[ShoppingList]    Script Date: 1/11/2022 5:55:47 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ShoppingList](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Itemname] [nvarchar](50) NULL,
+	[ShoppingDescription] [nvarchar](50) NULL,
+	[ItemPrice] [decimal](18, 0) NULL,
+	[CategoryID] [int] NULL,
+	[UserID] [nvarchar](450) NULL,
+ CONSTRAINT [PK_ShoppingList] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[ShoppingList]  WITH CHECK ADD FOREIGN KEY([CategoryID])
+REFERENCES [dbo].[ShoppingCategory] ([CatID])
+ALTER TABLE [dbo].[ShoppingList]  WITH CHECK ADD FOREIGN KEY([UserID])
+REFERENCES [dbo].[AspNetUsers ([Id])
+GO
+
+
+==============Shopping Category Table =================
+
+USE [AKDatabase]
+GO
+
+/****** Object:  Table [dbo].[ShoppingCategory]    Script Date: 1/14/2022 9:35:28 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ShoppingCategory](
+	[CatID] [int] IDENTITY(1,1) NOT NULL,
+	[CategoryName] [nvarchar](50) NOT NULL,
+ CONSTRAINT [PK_ShoppingCategory] PRIMARY KEY CLUSTERED 
+(
+	[CatID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+================ ShoppingCategory table with insert statement =========
+
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [CatID]
+      ,[CategoryName]
+  FROM [AKDatabase].[dbo].[ShoppingCategory]
+
+    INSERT INTO [dbo].[ShoppingCategory]
+           ([CategoryName])
+     VALUES
+           ('Clothes')
+GO
+
+  INSERT INTO [dbo].[ShoppingCategory]
+           ([CategoryName])
+     VALUES
+           ('Grocery')
+GO
+
+  INSERT INTO [dbo].[ShoppingCategory]
+           ([CategoryName])
+     VALUES
+           ('Kitchen Utensil')
+GO
+
+  INSERT INTO [dbo].[ShoppingCategory]
+           ([CategoryName])
+     VALUES
+           ('Other')
+GO
+
+=================
+
+
+
+
